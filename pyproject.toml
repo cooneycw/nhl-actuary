@@ -1,0 +1,29 @@
+[project]
+name = "nhl-actuary"
+version = "0.1.0"
+description = "NHL playoff bracket predictor with HTML output"
+requires-python = ">=3.11"
+dependencies = [
+    "requests>=2.31",
+    "jinja2>=3.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.4",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
