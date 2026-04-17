@@ -16,10 +16,21 @@
     --gold: #ffd700;
     --round-gap: 30px;
   }
+  [data-theme="light"] {
+    --bg: #f0f2f5;
+    --card-bg: #ffffff;
+    --card-border: #d0d7de;
+    --text: #1a1a2e;
+    --text-muted: #57606a;
+    --accent: #0078d4;
+    --winner: #1a7f37;
+    --gold: #b8860b;
+  }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     background: var(--bg);
     color: var(--text);
+    transition: background 0.3s ease, color 0.3s ease;
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     min-height: 100vh;
     padding: 20px;
@@ -77,6 +88,7 @@
     border: 1px solid var(--card-border);
     border-radius: 8px;
     overflow: hidden;
+    transition: background 0.3s ease, border-color 0.3s ease;
   }
   .team-row {
     display: flex;
@@ -190,6 +202,45 @@
     padding-bottom: 20px;
   }
 
+  /* Light theme overrides for semi-transparent backgrounds */
+  [data-theme="light"] .series-info {
+    background: rgba(0,0,0,0.05);
+  }
+  [data-theme="light"] .team-row.winner {
+    background: rgba(26, 127, 55, 0.08);
+  }
+  [data-theme="light"] .methodology code {
+    background: rgba(0,120,212,0.1);
+  }
+
+  /* Theme toggle */
+  .theme-toggle {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 1000;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    padding: 6px 12px;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+  }
+  .theme-toggle:hover {
+    color: var(--text);
+    border-color: var(--accent);
+  }
+  .theme-toggle-icon {
+    font-size: 1rem;
+    line-height: 1;
+  }
+
   /* Responsive */
   @media (max-width: 1200px) {
     .bracket-container {
@@ -203,6 +254,11 @@
 </style>
 </head>
 <body>
+
+<button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+  <span class="theme-toggle-icon" id="themeIcon">&#9790;</span>
+  <span id="themeLabel">Dark</span>
+</button>
 
 <h1>NHL Playoff Bracket Predictions</h1>
 <p class="subtitle">Based on {{ standings_date[:10] }} standings &bull; Generated {{ generated_at }}</p>
@@ -438,5 +494,39 @@
   nhl-actuary v0.1.0 &bull; Generated {{ generated_at }} &bull; Data as of {{ standings_date }}
 </div>
 
+<script>
+(function() {
+  var toggle = document.getElementById('themeToggle');
+  var icon = document.getElementById('themeIcon');
+  var label = document.getElementById('themeLabel');
+  var html = document.documentElement;
+
+  function setTheme(theme) {
+    html.setAttribute('data-theme', theme);
+    if (theme === 'light') {
+      icon.innerHTML = '&#9788;';
+      label.textContent = 'Light';
+    } else {
+      icon.innerHTML = '&#9790;';
+      label.textContent = 'Dark';
+    }
+  }
+
+  // Determine initial theme: localStorage > prefers-color-scheme > dark
+  var stored = localStorage.getItem('nhl-actuary-theme');
+  if (stored) {
+    setTheme(stored);
+  } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+    setTheme('light');
+  }
+
+  toggle.addEventListener('click', function() {
+    var current = html.getAttribute('data-theme') || 'dark';
+    var next = current === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    localStorage.setItem('nhl-actuary-theme', next);
+  });
+})();
+</script>
 </body>
 </html>
