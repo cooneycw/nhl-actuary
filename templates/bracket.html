@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NHL Playoff Bracket {{ standings_date[:10] }}</title>
+<style>
+  :root {
+    --bg: #0f1923;
+    --card-bg: #1a2733;
+    --card-border: #2a3f50;
+    --text: #e8edf2;
+    --text-muted: #8899aa;
+    --accent: #00c8ff;
+    --winner: #00e676;
+    --gold: #ffd700;
+    --round-gap: 30px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  h1 {
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: 5px;
+    color: var(--accent);
+  }
+  .subtitle {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 30px;
+  }
+  .bracket-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--round-gap);
+    max-width: 1600px;
+    margin: 0 auto;
+    overflow-x: auto;
+    padding: 10px;
+  }
+  .round {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 220px;
+  }
+  .round-label {
+    text-align: center;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+  }
+  .matchups {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    flex: 1;
+  }
+  /* Spacing grows with each round to visually align brackets */
+  .r1 .matchups { gap: 15px; }
+  .r2 .matchups { gap: 80px; }
+  .r3 .matchups { gap: 200px; }
+  .r4 .matchups { gap: 0; }
+
+  .matchup {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .team-row {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    gap: 8px;
+    border-bottom: 1px solid var(--card-border);
+    transition: background 0.2s;
+  }
+  .team-row:last-child { border-bottom: none; }
+  .team-row.winner {
+    background: rgba(0, 230, 118, 0.08);
+  }
+  .team-row.winner .team-name {
+    color: var(--winner);
+    font-weight: 600;
+  }
+  .team-logo {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+  .seed {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    width: 28px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .team-name {
+    flex: 1;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .team-record {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .series-info {
+    text-align: center;
+    padding: 3px;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    background: rgba(0,0,0,0.2);
+  }
+  .prob {
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  /* Stanley Cup champion highlight */
+  .champion-card {
+    text-align: center;
+    padding: 20px;
+    min-width: 200px;
+  }
+  .champion-card .trophy { font-size: 3rem; margin-bottom: 10px; }
+  .champion-card .champ-name {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--gold);
+    margin-bottom: 5px;
+  }
+  .champion-card .champ-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: var(--text-muted);
+  }
+  .champion-card .champ-logo {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    margin-bottom: 10px;
+  }
+
+  /* Methodology section */
+  .methodology {
+    max-width: 800px;
+    margin: 40px auto 0;
+    padding: 20px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    line-height: 1.6;
+  }
+  .methodology h2 {
+    color: var(--accent);
+    font-size: 1rem;
+    margin-bottom: 10px;
+  }
+  .methodology p { color: var(--text-muted); margin-bottom: 8px; }
+  .methodology code {
+    background: rgba(0,200,255,0.1);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.8rem;
+    color: var(--accent);
+  }
+
+  .footer {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    margin-top: 30px;
+    padding-bottom: 20px;
+  }
+
+  /* Responsive */
+  @media (max-width: 1200px) {
+    .bracket-container {
+      flex-direction: column;
+      gap: 30px;
+    }
+    .round { min-width: unset; width: 100%; max-width: 400px; margin: 0 auto; }
+    .r1 .matchups, .r2 .matchups, .r3 .matchups { gap: 15px; }
+    .champion-card { order: -1; }
+  }
+</style>
+</head>
+<body>
+
+<h1>NHL Playoff Bracket Predictions</h1>
+<p class="subtitle">Based on {{ standings_date[:10] }} standings &bull; Generated {{ generated_at }}</p>
+
+<div class="bracket-container">
+  {# ---- WESTERN CONFERENCE (left side, rounds go left to right toward center) ---- #}
+
+  {# West Round 1 #}
+  <div class="round r1">
+    <div class="round-label">West &mdash; Round 1</div>
+    <div class="matchups">
+      {% for s in west_r1 %}
+      <div class="matchup">
+        <div class="team-row {{ 'winner' if s.predicted_winner.abbrev == s.higher_seed.abbrev else '' }}">
+          <img class="team-logo" src="{{ s.higher_seed.logo_url }}" alt="{{ s.higher_seed.abbrev }}">
+          <span class="seed">{{ s.higher_seed.seed_label }}</span>
+          <span class="team-name">{{ s.higher_seed.name }}</span>
+          <span class="team-record">{{ s.higher_seed.record }}</span>
+        </div>
+        <div class="team-row {{ 'winner' if s.predicted_winner.abbrev == s.lower_seed.abbrev else '' }}">
+          <img class="team-logo" src="{{ s.lower_seed.logo_url }}" alt="{{ s.lower_seed.abbrev }}">
+          <span class="seed">{{ s.lower_seed.seed_label }}</span>
+          <span class="team-name">{{ s.lower_seed.name }}</span>
+          <span class="team-record">{{ s.lower_seed.record }}</span>
+        </div>
+        <div class="series-info">
+          {{ s.predicted_winner.abbrev }} in {{ s.series_length }} &bull;
+          <span class="prob">{{ "%.0f"|format(s.win_prob * 100) }}%</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# West Round 2 #}
+  <div class="round r2">
+    <div class="round-label">West &mdash; Round 2</div>
+    <div class="matchups">
+      {% for s in west_r2 %}
+      <div class="matchup">
+        <div class="team-row {{ 'winner' if s.predicted_winner.abbrev == s.higher_seed.abbrev else '' }}">
+          <img class="team-logo" src="{{ s.higher_seed.logo_url }}" alt="{{ s.higher_seed.abbrev }}">
+          <span class="seed">{{ s.higher_seed.seed_label }}</span>
+          <span class="team-name">{{ s.higher_seed.name }}</span>
+          <span class="team-record">{{ s.higher_seed.record }}</span>
+        </div>
+        <div class="team-row {{ 'winner' if s.predicted_winner.abbrev == s.lower_seed.abbrev else '' }}">
+          <img class="team-logo" src="{{ s.lower_seed.logo_url }}" alt="{{ s.lower_seed.abbrev }}">
+          <span class="seed">{{ s.lower_seed.seed_label }}</span>
+          <span class="team-name">{{ s.lower_seed.name }}</span>
+          <span class="team-record">{{ s.lower_seed.record }}</span>
+        </div>
+        <div class="series-info">
+          {{ s.predicted_winner.abbrev }} in {{ s.series_length }} &bull;
+          <span class="prob">{{ "%.0f"|format(s.win_prob * 100) }}%</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# West Conference Final #}
+  <div class="round r3">
+    <div class="round-label">West Final</div>
+    <div class="matchups">
+      {% if west_cf %}
+      <div class="matchup">
+        <div class="team-row {{ 'winner' if west_cf.predicted_winner.abbrev == west_cf.higher_seed.abbrev else '' }}">
+          <img class="team-logo" src="{{ west_cf.higher_seed.logo_url }}" alt="{{ west_cf.higher_seed.abbrev }}">
+          <span class="seed">{{ west_cf.higher_seed.seed_label }}</span>
+          <span class="team-name">{{ west_cf.higher_seed.name }}</span>
+          <span class="team-record">{{ west_cf.higher_seed.record }}</span>
+        </div>
+        <div class="team-row {{ 'winner' if west_cf.predicted_winner.abbrev == west_cf.lower_seed.abbrev else '' }}">
+          <img class="team-logo" src="{{ west_cf.lower_seed.logo_url }}" alt="{{ west_cf.lower_seed.abbrev }}">
+          <span class="seed">{{ west_cf.lower_seed.seed_label }}</span>
+          <span class="team-name">{{ west_cf.lower_seed.name }}</span>
+          <span class="team-record">{{ west_cf.lower_seed.record }}</span>
+        </div>
+        <div class="series-info">
+          {{ west_cf.predicted_winner.abbrev }} in {{ west_cf.series_length }} &bull;
+          <span class="prob">{{ "%.0f"|format(west_cf.win_prob * 100) }}%</span>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ---- STANLEY CUP FINAL (center) ---- #}
+  <div class="round r4">
+    <div class="round-label">Stanley Cup Final</div>
+    <div class="matchups">
+      {% if scf %}
+      <div class="matchup">
+        <div class="team-row {{ 'winner' if scf.predicted_winner.abbrev == scf.higher_seed.abbrev else '' }}">
+          <img class="team-logo" src="{{ scf.higher_seed.logo_url }}" alt="{{ scf.higher_seed.abbrev }}">
+          <span class="seed">{{ scf.higher_seed.seed_label }}</span>
+          <span class="team-name">{{ scf.higher_seed.name }}</span>
+          <span class="team-record">{{ scf.higher_seed.record }}</span>
+        </div>
+        <div class="team-row {{ 'winner' if scf.predicted_winner.abbrev == scf.lower_seed.abbrev else '' }}">
+          <img class="team-logo" src="{{ scf.lower_seed.logo_url }}" alt="{{ scf.lower_seed.abbrev }}">
+          <span class="seed">{{ scf.lower_seed.seed_label }}</span>
+          <span class="team-name">{{ scf.lower_seed.name }}</span>
+          <span class="team-record">{{ scf.lower_seed.record }}</span>
+        </div>
+        <div class="series-info">
+          {{ scf.predicted_winner.abbrev }} in {{ scf.series_length }} &bull;
+          <span class="prob">{{ "%.0f"|format(scf.win_prob * 100) }}%</span>
+        </div>
+      </div>
+
+      <div class="champion-card">
+        <img class="champ-logo" src="{{ scf.predicted_winner.logo_url }}" alt="{{ scf.predicted_winner.abbrev }}">
+        <div class="champ-name">{{ scf.predicted_winner.name }}</div>
+        <div class="champ-label">Stanley Cup Champions</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ---- EASTERN CONFERENCE (right side, rounds go right to left toward center) ---- #}
+
+  {# East Conference Final #}
+  <div class="round r3">
+    <div class="round-label">East Final</div>
+    <div class="matchups">
+      {% if east_cf %}
+      <div class="matchup">
+        <div class="team-row {{ 'winner' if east_cf.predicted_winner.abbrev == east_cf.higher_seed.abbrev else '' }}">
+          <img class="team-logo" src="{{ east_cf.higher_seed.logo_url }}" alt="{{ east_cf.higher_seed.abbrev }}">
+          <span class="seed">{{ east_cf.higher_seed.seed_label }}</span>
+          <span class="team-name">{{ east_cf.higher_seed.name }}</span>
+          <span class="team-record">{{ east_cf.higher_seed.record }}</span>
+        </div>
+        <div class="team-row {{ 'winner' if east_cf.predicted_winner.abbrev == east_cf.lower_seed.abbrev else '' }}">
+          <img class="team-logo" src="{{ east_cf.lower_seed.logo_url }}" alt="{{ east_cf.lower_seed.abbrev }}">
+          <span class="seed">{{ east_cf.lower_seed.seed_label }}</span>
+          <span class="team-name">{{ east_cf.lower_seed.name }}</span>
+          <span class="team-record">{{ east_cf.lower_seed.record }}</span>
+        </div>
+        <div class="series-info">
+          {{ east_cf.predicted_winner.abbrev }} in {{ east_cf.series_length }} &bull;
+          <span class="prob">{{ "%.0f"|format(east_cf.win_prob * 100) }}%</span>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# East Round 2 #}
+  <div class="round r2">
+    <div class="round-label">East &mdash; Round 2</div>
+    <div class="matchups">
+      {% for s in east_r2 %}
+      <div class="matchup">
+        <div class="team-row {{ 'winner' if s.predicted_winner.abbrev == s.higher_seed.abbrev else '' }}">
+          <img class="team-logo" src="{{ s.higher_seed.logo_url }}" alt="{{ s.higher_seed.abbrev }}">
+          <span class="seed">{{ s.higher_seed.seed_label }}</span>
+          <span class="team-name">{{ s.higher_seed.name }}</span>
+          <span class="team-record">{{ s.higher_seed.record }}</span>
+        </div>
+        <div class="team-row {{ 'winner' if s.predicted_winner.abbrev == s.lower_seed.abbrev else '' }}">
+          <img class="team-logo" src="{{ s.lower_seed.logo_url }}" alt="{{ s.lower_seed.abbrev }}">
+          <span class="seed">{{ s.lower_seed.seed_label }}</span>
+          <span class="team-name">{{ s.lower_seed.name }}</span>
+          <span class="team-record">{{ s.lower_seed.record }}</span>
+        </div>
+        <div class="series-info">
+          {{ s.predicted_winner.abbrev }} in {{ s.series_length }} &bull;
+          <span class="prob">{{ "%.0f"|format(s.win_prob * 100) }}%</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# East Round 1 #}
+  <div class="round r1">
+    <div class="round-label">East &mdash; Round 1</div>
+    <div class="matchups">
+      {% for s in east_r1 %}
+      <div class="matchup">
+        <div class="team-row {{ 'winner' if s.predicted_winner.abbrev == s.higher_seed.abbrev else '' }}">
+          <img class="team-logo" src="{{ s.higher_seed.logo_url }}" alt="{{ s.higher_seed.abbrev }}">
+          <span class="seed">{{ s.higher_seed.seed_label }}</span>
+          <span class="team-name">{{ s.higher_seed.name }}</span>
+          <span class="team-record">{{ s.higher_seed.record }}</span>
+        </div>
+        <div class="team-row {{ 'winner' if s.predicted_winner.abbrev == s.lower_seed.abbrev else '' }}">
+          <img class="team-logo" src="{{ s.lower_seed.logo_url }}" alt="{{ s.lower_seed.abbrev }}">
+          <span class="seed">{{ s.lower_seed.seed_label }}</span>
+          <span class="team-name">{{ s.lower_seed.name }}</span>
+          <span class="team-record">{{ s.lower_seed.record }}</span>
+        </div>
+        <div class="series-info">
+          {{ s.predicted_winner.abbrev }} in {{ s.series_length }} &bull;
+          <span class="prob">{{ "%.0f"|format(s.win_prob * 100) }}%</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="methodology">
+  <h2>Methodology</h2>
+  <p>
+    Predictions use the <strong>Log5</strong> method, a formula developed by Bill James for
+    estimating head-to-head win probabilities from each team's overall winning percentage.
+  </p>
+  <p>
+    <strong>Per-game probability:</strong>
+    <code>P(A) = (pA - pA&times;pB) / (pA + pB - 2&times;pA&times;pB)</code>
+    where pA and pB are regular-season point percentages. The higher seed receives a +1.5% bonus
+    for home-ice advantage.
+  </p>
+  <p>
+    <strong>Series probability</strong> is computed via the negative binomial distribution &mdash;
+    the probability of reaching exactly 4 wins before the opponent does in a best-of-7 format.
+  </p>
+  <p>
+    <strong>Series length</strong> is estimated from the dominance differential: lopsided matchups
+    tend to end in fewer games.
+  </p>
+  <p>
+    <strong>Data source:</strong> NHL public API (<code>api-web.nhle.com/v1/standings/now</code>).
+    All statistics are from the {{ standings_date[:10] }} regular season standings.
+  </p>
+</div>
+
+<div class="footer">
+  nhl-actuary v0.1.0 &bull; Generated {{ generated_at }} &bull; Data as of {{ standings_date }}
+</div>
+
+</body>
+</html>

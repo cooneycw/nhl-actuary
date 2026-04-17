@@ -30,3 +30,17 @@
 ## Issue Sync
 | Task | Issue | Status |
 |------|-------|--------|
+| T001 | #1 | Open |
+| T002 | #2 | Open |
+| T003 | #3 | Open |
+| T004 | #4 | Open |
+| T005 | #5 | Open |
+| T006 | #6 | Open |
+| T007 | #7 | Open |
+| T008 | #8 | Open |
+| T009 | #9 | Open |
+| T010 | #10 | Open |
+| T011 | #11 | Open |
+| T012 | #12 | Open |
+| T013 | #13 | Open |
+| T014 | #14 | Open |
