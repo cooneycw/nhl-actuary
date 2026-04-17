@@ -15,6 +15,8 @@
     --winner: #00e676;
     --gold: #ffd700;
     --round-gap: 30px;
+    --connector: #3a5068;
+    --connector-width: 2px;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -131,6 +133,98 @@
     font-weight: 500;
   }
 
+  /* ---- Bracket connector lines ---- */
+  .connector-round {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    width: 30px;
+    min-width: 30px;
+    margin: 0 calc(var(--round-gap) / -2);
+    position: relative;
+  }
+  .connector-pair {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    justify-content: center;
+    position: relative;
+  }
+  /* West connectors (left-to-right): horizontal lines from matchup, vertical merge, horizontal into next round */
+  .connector-west .connector-pair::before {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 25%;
+    bottom: 25%;
+    width: var(--connector-width);
+    background: var(--connector);
+  }
+  .connector-west .connector-pair::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    width: 100%;
+    height: var(--connector-width);
+    background: var(--connector);
+  }
+  /* Horizontal tails from west matchups to vertical bar */
+  .connector-west .conn-top,
+  .connector-west .conn-bot {
+    position: absolute;
+    left: 0;
+    height: var(--connector-width);
+    width: 100%;
+    background: var(--connector);
+  }
+  .connector-west .conn-top { top: 25%; }
+  .connector-west .conn-bot { bottom: 25%; }
+
+  /* East connectors (right-to-left): mirror of west */
+  .connector-east .connector-pair::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 25%;
+    bottom: 25%;
+    width: var(--connector-width);
+    background: var(--connector);
+  }
+  .connector-east .connector-pair::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 100%;
+    height: var(--connector-width);
+    background: var(--connector);
+  }
+  .connector-east .conn-top,
+  .connector-east .conn-bot {
+    position: absolute;
+    right: 0;
+    height: var(--connector-width);
+    width: 100%;
+    background: var(--connector);
+  }
+  .connector-east .conn-top { top: 25%; }
+  .connector-east .conn-bot { bottom: 25%; }
+
+  /* Single connectors (conference final → cup final) */
+  .connector-single {
+    display: flex;
+    align-items: center;
+    width: 30px;
+    min-width: 30px;
+    margin: 0 calc(var(--round-gap) / -2);
+  }
+  .connector-single .conn-line {
+    width: 100%;
+    height: var(--connector-width);
+    background: var(--connector);
+  }
+
   /* Stanley Cup champion highlight */
   .champion-card {
     text-align: center;
@@ -199,6 +293,7 @@
     .round { min-width: unset; width: 100%; max-width: 400px; margin: 0 auto; }
     .r1 .matchups, .r2 .matchups, .r3 .matchups { gap: 15px; }
     .champion-card { order: -1; }
+    .connector-round, .connector-single { display: none; }
   }
 </style>
 </head>
@@ -237,6 +332,18 @@
     </div>
   </div>
 
+  {# Connector: West R1 → R2 (4 matchups merge to 2) #}
+  <div class="connector-round connector-west">
+    <div class="connector-pair">
+      <div class="conn-top"></div>
+      <div class="conn-bot"></div>
+    </div>
+    <div class="connector-pair">
+      <div class="conn-top"></div>
+      <div class="conn-bot"></div>
+    </div>
+  </div>
+
   {# West Round 2 #}
   <div class="round r2">
     <div class="round-label">West &mdash; Round 2</div>
@@ -261,6 +368,14 @@
         </div>
       </div>
       {% endfor %}
+    </div>
+  </div>
+
+  {# Connector: West R2 → CF (2 matchups merge to 1) #}
+  <div class="connector-round connector-west">
+    <div class="connector-pair">
+      <div class="conn-top"></div>
+      <div class="conn-bot"></div>
     </div>
   </div>
 
@@ -289,6 +404,11 @@
       </div>
       {% endif %}
     </div>
+  </div>
+
+  {# Connector: West CF → Stanley Cup Final #}
+  <div class="connector-single">
+    <div class="conn-line"></div>
   </div>
 
   {# ---- STANLEY CUP FINAL (center) ---- #}
@@ -326,6 +446,11 @@
 
   {# ---- EASTERN CONFERENCE (right side, rounds go right to left toward center) ---- #}
 
+  {# Connector: Stanley Cup Final → East CF #}
+  <div class="connector-single">
+    <div class="conn-line"></div>
+  </div>
+
   {# East Conference Final #}
   <div class="round r3">
     <div class="round-label">East Final</div>
@@ -353,6 +478,14 @@
     </div>
   </div>
 
+  {# Connector: East CF → R2 (1 merges to 2) #}
+  <div class="connector-round connector-east">
+    <div class="connector-pair">
+      <div class="conn-top"></div>
+      <div class="conn-bot"></div>
+    </div>
+  </div>
+
   {# East Round 2 #}
   <div class="round r2">
     <div class="round-label">East &mdash; Round 2</div>
@@ -377,6 +510,18 @@
         </div>
       </div>
       {% endfor %}
+    </div>
+  </div>
+
+  {# Connector: East R2 → R1 (2 merges to 4) #}
+  <div class="connector-round connector-east">
+    <div class="connector-pair">
+      <div class="conn-top"></div>
+      <div class="conn-bot"></div>
+    </div>
+    <div class="connector-pair">
+      <div class="conn-top"></div>
+      <div class="conn-bot"></div>
     </div>
   </div>
 
